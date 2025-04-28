@@ -4,12 +4,49 @@ A comprehensive user management system built with Django REST Framework, featuri
 
 ## Features
 
-- User Authentication (Registration, Login, Token Refresh)
+- User Authentication (Registration, Login, Logout)
+- Social Authentication (Google Login)
+- Password Management (Change Password, Forgot Password, Reset Password)
 - Role-Based Access Control using Django Groups
 - User Profile Management
 - Group Management
 - Permission Management
 - Admin Interface Integration
+- JWT Token Authentication
+
+## Setup
+
+1. Clone the repository
+2. Create a virtual environment:
+   ```bash
+   python -m venv env
+   source env/bin/activate  # On Windows: env\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Apply migrations:
+   ```bash
+   python manage.py migrate
+   ```
+5. Create a superuser:
+   ```bash
+   python manage.py createsuperuser
+   ```
+6. Configure email settings in settings.py:
+   ```python
+   EMAIL_HOST = 'smtp.gmail.com'
+   EMAIL_PORT = 587
+   EMAIL_USE_TLS = True
+   EMAIL_HOST_USER = 'your-email@gmail.com'
+   EMAIL_HOST_PASSWORD = 'your-app-password'
+   ```
+7. Configure Google OAuth2 settings in settings.py:
+   ```python
+   SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'your-google-client-id'
+   SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'your-google-client-secret'
+   ```
 
 ## API Documentation
 
@@ -27,17 +64,21 @@ Request Body:
     "password": "string",
     "password2": "string",
     "first_name": "string",
-    "last_name": "string"
+    "last_name": "string",
+    "phone_number": "string"
 }
 ```
 Response:
 ```json
 {
-    "id": "integer",
-    "username": "string",
-    "email": "string",
-    "first_name": "string",
-    "last_name": "string"
+    "user": {
+        "id": "integer",
+        "username": "string",
+        "email": "string",
+        "first_name": "string",
+        "last_name": "string"
+    },
+    "message": "User created successfully"
 }
 ```
 
@@ -60,7 +101,88 @@ Response:
 }
 ```
 
-#### 3. Token Refresh
+#### 3. User Logout
+```http
+POST /api/auth/logout/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Request Body:
+```json
+{
+    "refresh": "string"
+}
+```
+
+#### 4. Google Login
+```http
+POST /api/auth/google-login/
+```
+Request Body:
+```json
+{
+    "access_token": "google-oauth2-access-token"
+}
+```
+Response:
+```json
+{
+    "access": "string",
+    "refresh": "string",
+    "user": {
+        "id": "integer",
+        "username": "string",
+        "email": "string",
+        "first_name": "string",
+        "last_name": "string"
+    }
+}
+```
+
+#### 5. Change Password
+```http
+POST /api/auth/users/change_password/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Request Body:
+```json
+{
+    "old_password": "string",
+    "new_password": "string",
+    "confirm_password": "string"
+}
+```
+
+#### 6. Forgot Password
+```http
+POST /api/auth/users/forgot_password/
+```
+Request Body:
+```json
+{
+    "email": "string"
+}
+```
+
+#### 7. Reset Password
+```http
+POST /api/auth/users/reset_password/
+```
+Request Body:
+```json
+{
+    "reset_token": "string",
+    "new_password": "string",
+    "confirm_password": "string"
+}
+```
+
+#### 8. Token Refresh
 ```http
 POST /api/auth/token/refresh/
 ```
@@ -81,27 +203,11 @@ Response:
 
 #### 1. Get User Profile
 ```http
-GET /api/auth/users/{id}/
+GET /api/auth/users/me/
 ```
 Headers:
 ```
 Authorization: Bearer <access_token>
-```
-Response:
-```json
-{
-    "id": "integer",
-    "username": "string",
-    "email": "string",
-    "first_name": "string",
-    "last_name": "string",
-    "groups": [
-        {
-            "id": "integer",
-            "name": "string"
-        }
-    ]
-}
 ```
 
 #### 2. Update User Profile
@@ -119,7 +225,8 @@ Request Body:
     "username": "string",
     "email": "string",
     "first_name": "string",
-    "last_name": "string"
+    "last_name": "string",
+    "phone_number": "string"
 }
 ```
 
@@ -247,5 +354,46 @@ Authorization: Bearer <access_token>
     "detail": "Not found."
 }
 ```
+
+## Security Features
+
+1. JWT Token Authentication
+2. Password Validation
+3. Email Verification
+4. Token Blacklisting for Logout
+5. Role-Based Access Control
+6. Google OAuth2 Authentication
+
+## Development
+
+1. Run development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+2. Run tests:
+   ```bash
+   python manage.py test
+   ```
+
+## Production Deployment
+
+For production deployment:
+
+1. Set DEBUG = False in settings.py
+2. Use secure email settings
+3. Configure proper database (e.g., PostgreSQL)
+4. Set up proper CORS settings
+5. Use environment variables for sensitive data
+6. Configure proper static file serving
+7. Set up proper SSL/TLS certificates
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
 

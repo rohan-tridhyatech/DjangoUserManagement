@@ -7,6 +7,7 @@ class CustomUser(AbstractUser):
     is_verified = models.BooleanField(_('Verified'), default=False)
     created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+    reset_token = models.CharField(_('Reset Token'), max_length=32, blank=True, null=True)
 
     class Meta:
         verbose_name = _('User')
