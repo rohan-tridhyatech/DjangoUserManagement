@@ -54,26 +54,536 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-## API Endpoints
+## API Documentation
 
 ### Authentication
-- `POST /api/auth/login/` - User login
-- `POST /api/auth/logout/` - User logout
+
+#### Login
+```http
+POST /api/auth/login/
+```
+Request Body:
+```json
+{
+    "username": "string",
+    "password": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+#### Logout
+```http
+POST /api/auth/logout/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Request Body:
+```json
+{
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Successfully logged out"
+}
+```
+
+#### Token Refresh
+```http
+POST /api/auth/token/refresh/
+```
+Request Body:
+```json
+{
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+Response (200 OK):
+```json
+{
+    "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+#### Token Verify
+```http
+POST /api/auth/token/verify/
+```
+Request Body:
+```json
+{
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+Response (200 OK):
+```json
+{}
+```
 
 ### User Management
-- `POST /api/users/register/` - Register new user
-- `GET /api/users/me/` - Get current user details
-- `PUT /api/users/me/` - Update current user
-- `POST /api/users/change_password/` - Change password
-- `POST /api/users/forgot_password/` - Request password reset
-- `POST /api/users/reset_password/` - Reset password
+
+#### Register
+```http
+POST /api/users/register/
+```
+Request Body:
+```json
+{
+    "username": "string",
+    "email": "string",
+    "password": "string",
+    "password2": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "group_ids": [1, 2]  // Optional
+}
+```
+Response (201 Created):
+```json
+{
+    "user": {
+        "id": 1,
+        "username": "string",
+        "email": "string",
+        "first_name": "string",
+        "last_name": "string",
+        "phone_number": "string",
+        "is_verified": false,
+        "groups": []
+    },
+    "message": "User created successfully"
+}
+```
+
+#### List Users (Admin Only)
+```http
+GET /api/users/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+[
+    {
+        "id": 1,
+        "username": "string",
+        "email": "string",
+        "first_name": "string",
+        "last_name": "string",
+        "phone_number": "string",
+        "is_verified": true,
+        "groups": [
+            {
+                "id": 1,
+                "name": "string"
+            }
+        ]
+    }
+]
+```
+
+#### Get User Details
+```http
+GET /api/users/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "is_verified": true,
+    "groups": [
+        {
+            "id": 1,
+            "name": "string"
+        }
+    ]
+}
+```
+
+#### Get Current User
+```http
+GET /api/users/me/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "is_verified": true,
+    "groups": [
+        {
+            "id": 1,
+            "name": "string"
+        }
+    ]
+}
+```
+
+#### Update Current User
+```http
+PUT /api/users/me/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "is_verified": true,
+    "groups": []
+}
+```
+
+#### Update User (Admin Only)
+```http
+PUT /api/users/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "is_active": true,
+    "is_staff": false,
+    "is_superuser": false
+}
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "phone_number": "string",
+    "is_verified": true,
+    "groups": []
+}
+```
+
+#### Delete User (Admin Only)
+```http
+DELETE /api/users/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (204 No Content)
+
+#### Change Password
+```http
+POST /api/users/change_password/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "old_password": "string",
+    "new_password": "string",
+    "new_password2": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Password changed successfully"
+}
+```
+
+#### Forgot Password
+```http
+POST /api/users/forgot_password/
+```
+Request Body:
+```json
+{
+    "email": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Password reset link has been sent to your email"
+}
+```
+
+#### Reset Password
+```http
+POST /api/users/reset_password/
+```
+Request Body:
+```json
+{
+    "reset_token": "string",
+    "new_password": "string",
+    "new_password2": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Password has been reset successfully"
+}
+```
+
+#### Assign Groups to User (Admin Only)
+```http
+POST /api/users/{id}/assign_groups/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "group_ids": [1, 2]
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Groups assigned successfully"
+}
+```
 
 ### Group Management
-- `GET /api/groups/` - List all groups
-- `POST /api/groups/` - Create new group
-- `GET /api/groups/{id}/` - Get group details
-- `PUT /api/groups/{id}/` - Update group
-- `DELETE /api/groups/{id}/` - Delete group
+
+#### List Groups
+```http
+GET /api/groups/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+[
+    {
+        "id": 1,
+        "name": "string"
+    }
+]
+```
+
+#### Create Group (Admin Only)
+```http
+POST /api/groups/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "name": "string"
+}
+```
+Response (201 Created):
+```json
+{
+    "id": 1,
+    "name": "string"
+}
+```
+
+#### Get Group Details
+```http
+GET /api/groups/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "name": "string"
+}
+```
+
+#### Update Group (Admin Only)
+```http
+PUT /api/groups/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "name": "string"
+}
+```
+Response (200 OK):
+```json
+{
+    "id": 1,
+    "name": "string"
+}
+```
+
+#### Delete Group (Admin Only)
+```http
+DELETE /api/groups/{id}/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (204 No Content)
+
+### Permission Management
+
+#### List Permissions (Admin Only)
+```http
+GET /api/permissions/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+```
+Response (200 OK):
+```json
+[
+    {
+        "id": 1,
+        "name": "string",
+        "codename": "string",
+        "content_type": {
+            "id": 1,
+            "app_label": "string",
+            "model": "string"
+        }
+    }
+]
+```
+
+#### Assign Permissions to Group (Admin Only)
+```http
+POST /api/groups/{id}/assign_permissions/
+```
+Headers:
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+Request Body:
+```json
+{
+    "permission_ids": [1, 2]
+}
+```
+Response (200 OK):
+```json
+{
+    "message": "Permissions assigned successfully"
+}
+```
+
+### Error Responses
+
+#### 400 Bad Request
+```json
+{
+    "field_name": ["error message"]
+}
+```
+
+#### 401 Unauthorized
+```json
+{
+    "detail": "Authentication credentials were not provided."
+}
+```
+
+#### 403 Forbidden
+```json
+{
+    "detail": "You do not have permission to perform this action."
+}
+```
+
+#### 404 Not Found
+```json
+{
+    "detail": "Not found."
+}
+```
+
+#### 429 Too Many Requests
+```json
+{
+    "detail": "Request was throttled."
+}
+```
 
 ## Environment Variables
 
