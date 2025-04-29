@@ -1,8 +1,3 @@
-# Django User Management System
-
-A robust user management system built with Django REST framework, featuring JWT authentication, user registration, password management, and group-based permissions.
-
-
 # Django User Management System API Documentation
 
 A comprehensive guide to the User Management System APIs, featuring JWT authentication, user management, group-based permissions, and password management.
