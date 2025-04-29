@@ -2,7 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import Group
-from social_django.models import UserSocialAuth
 
 User = get_user_model()
 
@@ -51,20 +50,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        user = User.objects.create(**validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
+        user = User.objects.create_user(**validated_data)
         return user
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-    confirm_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, validators=[validate_password])
+    new_password2 = serializers.CharField(required=True)
 
     def validate(self, attrs):
-        if attrs['new_password'] != attrs['confirm_password']:
+        if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"new_password": "Password fields didn't match."})
-        validate_password(attrs['new_password'])
         return attrs
 
 class ForgotPasswordSerializer(serializers.Serializer):
@@ -72,31 +68,10 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
     reset_token = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-    confirm_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, validators=[validate_password])
+    new_password2 = serializers.CharField(required=True)
 
     def validate(self, attrs):
-        if attrs['new_password'] != attrs['confirm_password']:
+        if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"new_password": "Password fields didn't match."})
-        validate_password(attrs['new_password'])
-        return attrs
-
-class GoogleAuthSerializer(serializers.Serializer):
-    access_token = serializers.CharField(required=True)
-
-    def validate(self, attrs):
-        access_token = attrs.get('access_token')
-        
-        try:
-            # Verify the token with Google
-            from social_core.backends.google import GoogleOAuth2
-            backend = GoogleOAuth2()
-            user_data = backend.user_data(access_token)
-            
-            if not user_data:
-                raise serializers.ValidationError("Invalid token")
-            
-            attrs['user_data'] = user_data
-            return attrs
-        except Exception as e:
-            raise serializers.ValidationError(str(e)) 
+        return attrs 

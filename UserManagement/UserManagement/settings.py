@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'social_django',
     'User',
 ]
 
@@ -167,8 +166,8 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=1),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=2),
 }
 
 # Email Configuration
@@ -181,24 +180,6 @@ EMAIL_HOST_PASSWORD = 'bczn lxqf gjjw xrkr'
 
 # Frontend URL for password reset
 FRONTEND_URL = 'http://localhost:3000'  # Replace with your frontend URL
-
-# Google OAuth2 settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'your-google-client-id'  # Replace with your Google Client ID
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'your-google-client-secret'  # Replace with your Google Client Secret
-
-# Authentication backends
-AUTHENTICATION_BACKENDS = (
-    'social_core.backends.google.GoogleOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-)
-
-# Social Auth settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'openid'
-]
-SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 
 # Login URL
 LOGIN_URL = '/api/auth/login/'

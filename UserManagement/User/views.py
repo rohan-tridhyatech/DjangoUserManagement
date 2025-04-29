@@ -12,8 +12,7 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, GroupSerializer,
-    ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
-    GoogleAuthSerializer
+    ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 )
 
 User = get_user_model()
@@ -210,57 +209,3 @@ class UserLogoutView(TokenBlacklistView):
                 {"error": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-class GoogleLoginView(APIView):
-    permission_classes = [permissions.AllowAny]
-    serializer_class = GoogleAuthSerializer
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        user_data = serializer.validated_data['user_data']
-        email = user_data.get('email')
-        
-        try:
-            # Try to get the user by email
-            user = User.objects.get(email=email)
-            
-            # Check if user has Google social auth
-            if not UserSocialAuth.objects.filter(user=user, provider='google-oauth2').exists():
-                # Create social auth for the user
-                UserSocialAuth.objects.create(
-                    user=user,
-                    provider='google-oauth2',
-                    uid=user_data.get('sub')
-                )
-        except User.DoesNotExist:
-            # Create new user
-            username = email.split('@')[0]
-            # Ensure username is unique
-            while User.objects.filter(username=username).exists():
-                username = f"{username}{get_random_string(4)}"
-            
-            user = User.objects.create(
-                username=username,
-                email=email,
-                first_name=user_data.get('given_name', ''),
-                last_name=user_data.get('family_name', ''),
-                is_verified=True
-            )
-            
-            # Create social auth for the new user
-            UserSocialAuth.objects.create(
-                user=user,
-                provider='google-oauth2',
-                uid=user_data.get('sub')
-            )
-        
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': UserSerializer(user).data
-        }, status=status.HTTP_200_OK)
