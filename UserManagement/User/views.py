@@ -5,16 +5,18 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.contrib.auth.password_validation import validate_password
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils.crypto import get_random_string
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, GroupSerializer,
-    ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+    ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
+    PermissionSerializer
 )
 
+# Get the User model
 User = get_user_model()
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -22,16 +24,81 @@ class IsOwnerOrAdmin(permissions.BasePermission):
         return request.user.is_staff or obj == request.user
 
 class GroupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Group model operations.
+    Handles CRUD operations and custom actions for group management.
+    """
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAdminUser]
 
+    @action(detail=True, methods=['post'])
+    def assign_permissions(self, request, pk=None):
+        """
+        Custom action for assigning permissions to a group.
+        Replaces all existing permissions with the new ones.
+        """
+        permission_ids = request.data.get('permission_ids')
+        if not permission_ids:
+            return Response(
+                {"error": "permission_ids is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            group = self.get_object()
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            group.permissions.set(permissions)
+            return Response(
+                {"message": "Permissions assigned successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Permission.DoesNotExist:
+            return Response(
+                {"error": "One or more permissions not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=True, methods=['post'])
+    def remove_permissions(self, request, pk=None):
+        """
+        Custom action for removing permissions from a group.
+        Removes only the specified permissions while keeping others intact.
+        """
+        permission_ids = request.data.get('permission_ids')
+        if not permission_ids:
+            return Response(
+                {"error": "permission_ids is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            group = self.get_object()
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            group.permissions.remove(*permissions)
+            return Response(
+                {"message": "Permissions removed successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Permission.DoesNotExist:
+            return Response(
+                {"error": "One or more permissions not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 class UserViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for User model operations.
+    Handles CRUD operations and custom actions for user management.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
+        """
+        Override to allow registration without authentication.
+        """
         if self.action == 'register':
             return [permissions.AllowAny()]
         return super().get_permissions()
@@ -41,15 +108,20 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'])
     def register(self, request):
+        """
+        Custom action for user registration.
+        Allows new users to create an account.
+        """
         serializer = UserRegistrationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return Response({
-            "user": UserSerializer(user, context=self.get_serializer_context()).data,
-            "message": "User created successfully"
-        }, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "user": UserSerializer(user, context=self.get_serializer_context()).data,
+                "message": "User created successfully"
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -88,12 +160,16 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def change_password(self, request):
+        """
+        Custom action for changing user password.
+        Requires the old password for verification.
+        """
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             # Check old password
             if not request.user.check_password(serializer.validated_data['old_password']):
                 return Response(
-                    {"error": "Old password is incorrect"},
+                    {"old_password": ["Wrong password."]}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -102,13 +178,17 @@ class UserViewSet(viewsets.ModelViewSet):
             request.user.save()
             
             return Response(
-                {"message": "Password changed successfully"},
+                {"message": "Password changed successfully"}, 
                 status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'])
     def forgot_password(self, request):
+        """
+        Custom action for handling forgot password requests.
+        Generates a reset token and sends it via email.
+        """
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
@@ -140,8 +220,12 @@ class UserViewSet(viewsets.ModelViewSet):
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'])
     def reset_password(self, request):
+        """
+        Custom action for resetting password using the reset token.
+        Validates the token and sets the new password.
+        """
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
             reset_token = serializer.validated_data['reset_token']
@@ -167,45 +251,92 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserLoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
 
-class UserLogoutView(TokenBlacklistView):
-    permission_classes = [permissions.IsAuthenticated]
+class UserLogoutView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         try:
-            # Check if user is authenticated
-            if not request.user.is_authenticated:
-                return Response(
-                    {"error": "User is not authenticated"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            # Check for refresh token
             refresh_token = request.data.get('refresh')
             if not refresh_token:
                 return Response(
                     {"error": "Refresh token is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-            # Get the authorization header
-            auth_header = request.headers.get('Authorization', '')
-            if not auth_header.startswith('Bearer '):
-                return Response(
-                    {"error": "Invalid authorization header format"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            # Try to blacklist the token
-            try:
-                return super().post(request, *args, **kwargs)
-            except Exception as e:
-                return Response(
-                    {"error": f"Failed to blacklist token: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
+            
+            # Blacklist the refresh token
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            
+            return Response(
+                {"message": "Successfully logged out"},
+                status=status.HTTP_200_OK
+            )
         except Exception as e:
             return Response(
-                {"error": f"An error occurred: {str(e)}"},
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for Permission model operations.
+    Provides read-only access to permissions and custom actions for permission management.
+    """
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    @action(detail=True, methods=['post'])
+    def assign_to_group(self, request, pk=None):
+        """
+        Custom action for assigning a permission to a group.
+        Adds the permission to the group's permissions.
+        """
+        group_id = request.data.get('group_id')
+        if not group_id:
+            return Response(
+                {"error": "group_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            group = Group.objects.get(id=group_id)
+            permission = self.get_object()
+            group.permissions.add(permission)
+            return Response(
+                {"message": "Permission assigned to group successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Group.DoesNotExist:
+            return Response(
+                {"error": "Group not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=True, methods=['post'])
+    def remove_from_group(self, request, pk=None):
+        """
+        Custom action for removing a permission from a group.
+        Removes the permission from the group's permissions.
+        """
+        group_id = request.data.get('group_id')
+        if not group_id:
+            return Response(
+                {"error": "group_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            group = Group.objects.get(id=group_id)
+            permission = self.get_object()
+            group.permissions.remove(permission)
+            return Response(
+                {"message": "Permission removed from group successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Group.DoesNotExist:
+            return Response(
+                {"error": "Group not found"},
+                status=status.HTTP_404_NOT_FOUND
             )
