@@ -37,6 +37,7 @@ Authenticate user and receive JWT tokens.
 - The refresh token is used to obtain a new access token
 - Tokens expire after a configured time (default: 5 minutes for access, 24 hours for refresh)
 
+
 ### Logout
 ```http
 POST /api/auth/logout/
@@ -61,6 +62,7 @@ Authorization: Bearer <access_token>
     "message": "Successfully logged out"
 }
 ```
+
 
 ## User Management
 
@@ -107,6 +109,7 @@ Create a new user account.
 - Password must meet complexity requirements
 - Passwords must match
 - Phone number must be valid (if provided)
+
 
 ### List Users
 ```http
@@ -170,6 +173,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
+
 ### Update User
 ```http
 PUT /api/users/{id}/
@@ -196,6 +200,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Delete User
 ```http
 DELETE /api/users/{id}/
@@ -206,6 +211,7 @@ Delete user account (admin only).
 ```
 Authorization: Bearer <access_token>
 ```
+
 
 ### Change Password
 ```http
@@ -235,6 +241,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Forgot Password
 ```http
 POST /api/users/forgot_password/
@@ -254,6 +261,7 @@ Request password reset.
     "message": "Password reset link has been sent to your email"
 }
 ```
+
 
 ### Reset Password
 ```http
@@ -276,6 +284,7 @@ Reset password with token.
     "message": "Password has been reset successfully"
 }
 ```
+
 
 ## Group Management
 
@@ -300,6 +309,7 @@ Authorization: Bearer <access_token>
 ]
 ```
 
+
 ### Create Group
 ```http
 POST /api/groups/
@@ -319,6 +329,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Get Group Details
 ```http
 GET /api/groups/{id}/
@@ -329,6 +340,7 @@ Get specific group details.
 ```
 Authorization: Bearer <access_token>
 ```
+
 
 ### Update Group
 ```http
@@ -349,6 +361,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Delete Group
 ```http
 DELETE /api/groups/{id}/
@@ -359,6 +372,7 @@ Delete group (admin only).
 ```
 Authorization: Bearer <access_token>
 ```
+
 
 ### Assign Permissions to Group
 ```http
@@ -386,6 +400,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Remove Permissions from Group
 ```http
 POST /api/groups/{id}/remove_permissions/
@@ -411,6 +426,7 @@ Content-Type: application/json
     "message": "Permissions removed successfully"
 }
 ```
+
 
 ## Permission Management
 
@@ -452,6 +468,7 @@ Get specific permission details (admin only).
 Authorization: Bearer <access_token>
 ```
 
+
 ### Assign Permission to Group
 ```http
 POST /api/permissions/{id}/assign_to_group/
@@ -478,6 +495,7 @@ Content-Type: application/json
 }
 ```
 
+
 ### Remove Permission from Group
 ```http
 POST /api/permissions/{id}/remove_from_group/
@@ -503,6 +521,7 @@ Content-Type: application/json
     "message": "Permission removed from group successfully"
 }
 ```
+
 
 ## Error Handling
 
