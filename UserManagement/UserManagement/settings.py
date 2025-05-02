@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Manually Added
+
     'django.contrib.sites',
 
     'rest_framework',
