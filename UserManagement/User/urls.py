@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, GroupViewSet, PermissionViewSet,
-    UserLoginView, UserLogoutView
+    UserLoginView, UserLogoutView,GoogleLoginRedirect,GoogleCallbackView
 )
 
 router = DefaultRouter()
@@ -14,4 +14,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('login/', UserLoginView.as_view(), name='login'),
     path('logout/', UserLogoutView.as_view(), name='logout'),
+    path('google/', GoogleLoginRedirect.as_view()),
+    path('google/callback/', GoogleCallbackView.as_view()),
 ]

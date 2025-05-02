@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/auth/', include('User.urls')),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('accounts/', include('allauth.urls')),  # Needed by allauth
 ]
 
 if settings.DEBUG:
