@@ -102,11 +102,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return [permissions.AllowAny()]
         return super().get_permissions()
 
-    # def get_queryset(self):
-    #     if self.request.user.is_staff:
-    #         return User.objects.all()
-    #     return User.objects.filter(id=self.request.user.id)
-
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
